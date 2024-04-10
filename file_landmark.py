@@ -48,6 +48,12 @@ def track_joints_and_save(input_file_path):
             if results.pose_landmarks:
                 mp_drawing.draw_landmarks(
                     frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+                
+                landmark_25 = results.pose_landmarks.landmark[25]
+                x_25 = int(landmark_25.x * frame_width)
+                y_25 = int(landmark_25.y * frame_height)
+                # 텍스트를 이미지 위에 표시합니다.
+                cv2.putText(frame, "25th joint", (x_25, y_25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
             # 동영상 파일에 프레임을 추가합니다.
             out.write(frame)
