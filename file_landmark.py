@@ -3,6 +3,16 @@ from tkinter import filedialog
 import os
 import cv2
 import mediapipe as mp
+import numpy as np
+
+# 벡터간 각도 구하는 함수
+def angle_between_vectors(vec1, vec2):
+    dot_product = np.dot(vec1, vec2)
+    magnitude_vec1 = np.linalg.norm(vec1)
+    magnitude_vec2 = np.linalg.norm(vec2)
+    angle_rad = np.arccos(dot_product / (magnitude_vec1 * magnitude_vec2))
+    angle_deg = round(np.degrees(angle_rad),1)
+    return angle_deg
 
 def track_joints_and_save(input_file_path):
     # 미디어파이프 pose 모듈을 로드합니다.
@@ -45,15 +55,31 @@ def track_joints_and_save(input_file_path):
             results = pose.process(image_rgb)
 
             # 인식된 pose를 프레임에 그립니다.
-            if results.pose_landmarks:
-                mp_drawing.draw_landmarks(
-                    frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+            if results.pose_world_landmarks:
+                mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
                 
-                landmark_25 = results.pose_landmarks.landmark[25]
+                # 타겟 관절의 각도 표기
+                target_num = 26
+
+                # 텍스트를 표기할 좌표를 위한 스케일링
+                landmark_25 = results.pose_landmarks.landmark[target_num]
                 x_25 = int(landmark_25.x * frame_width)
                 y_25 = int(landmark_25.y * frame_height)
+
+                # 관절 좌표를 추출(소수점 아래 4번째에서 반올림)
+                joints = []
+                for landmark in results.pose_world_landmarks.landmark:
+                    joints.append((round(landmark.x, 3), round(landmark.y,3), round(landmark.z,3)))
+                
+                # 각도를 구할 타겟 관절과 벡터
+                upper_joint = joints[24]
+                target_joint = joints[target_num]
+                lower_joint = joints[28]
+                upper_vec = [upper_joint[0] - target_joint[0], upper_joint[1] - target_joint[1], upper_joint[2] - target_joint[2]]
+                lower_vec = [lower_joint[0] - target_joint[0], lower_joint[1] - target_joint[1], lower_joint[2] - target_joint[2]]
+
                 # 텍스트를 이미지 위에 표시합니다.
-                cv2.putText(frame, "25th joint", (x_25, y_25), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+                cv2.putText(frame, f"{angle_between_vectors(upper_vec,lower_vec)}", (x_25, y_25), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (0, 255, 0), 2)
 
             # 동영상 파일에 프레임을 추가합니다.
             out.write(frame)
