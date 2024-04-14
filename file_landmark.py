@@ -15,18 +15,18 @@ def angle_between_vectors(vec1, vec2):
     return angle_deg
 
 def track_joints_and_save(input_file_path):
-    # 미디어파이프 pose 모듈을 로드합니다.
+    # 미디어파이프 pose 모듈을 로드
     mp_pose = mp.solutions.pose
     mp_drawing = mp.solutions.drawing_utils
 
-    # 입력 파일 경로에서 파일명과 확장자를 추출합니다.
+    # 입력 파일 경로에서 파일명과 확장자를 추출
     input_filename, input_file_extension = os.path.splitext(os.path.basename(input_file_path))
     
-    # 출력 폴더를 생성합니다.
+    # 출력 폴더를 생성
     output_directory = "./output/"
     os.makedirs(output_directory, exist_ok=True)
 
-    # 출력 동영상 파일 경로를 설정합니다.
+    # 출력 동영상 파일 경로를 설정
     output_file_path = os.path.join(output_directory, f"{input_filename}_output.mp4")
 
     # 입력 파일을 읽어옵니다.
@@ -40,21 +40,21 @@ def track_joints_and_save(input_file_path):
     # 동영상 writer 생성
     out = cv2.VideoWriter(output_file_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (frame_width, frame_height))
 
-    # 미디어파이프 pose 인식을 위한 인스턴스를 생성합니다.
+    # 미디어파이프 pose 인식을 위한 인스턴스를 생성
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
-            # 프레임을 읽어옵니다.
+            # 프레임을 읽어옴
             ret, frame = cap.read()
             if not ret:
                 break
 
-            # 읽어온 프레임을 BGR에서 RGB로 변환합니다.
+            # 읽어온 프레임을 BGR에서 RGB로 변환
             image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             
-            # 미디어파이프 pose 모델을 이용하여 pose를 인식합니다.
+            # 미디어파이프 pose 모델을 이용하여 pose를 인식
             results = pose.process(image_rgb)
 
-            # 인식된 pose를 프레임에 그립니다.
+            # 인식된 pose를 프레임에 그림
             if results.pose_world_landmarks:
                 mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
                 
@@ -78,30 +78,30 @@ def track_joints_and_save(input_file_path):
                 upper_vec = [upper_joint[0] - target_joint[0], upper_joint[1] - target_joint[1], upper_joint[2] - target_joint[2]]
                 lower_vec = [lower_joint[0] - target_joint[0], lower_joint[1] - target_joint[1], lower_joint[2] - target_joint[2]]
 
-                # 텍스트를 이미지 위에 표시합니다.
+                # 텍스트를 이미지 위에 표시
                 cv2.putText(frame, f"{angle_between_vectors(upper_vec,lower_vec)}", (x_25, y_25), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-            # 동영상 파일에 프레임을 추가합니다.
+            # 동영상 파일에 프레임 추가
             out.write(frame)
 
         print(f"Pose detection video saved to: {output_file_path}")
 
-    # 사용한 자원을 해제합니다.
+    # 사용한 자원을 해제
     cap.release()
     out.release()
     cv2.destroyAllWindows()
 
 def select_input_file_and_track():
-    # 파일 대화상자를 통해 입력 파일 경로를 선택합니다.
+    # 입력 파일 경로를 선택
     root = tk.Tk()
-    root.withdraw()  # Tk root 창을 숨깁니다.
+    root.withdraw()
     input_file_path = filedialog.askopenfilename()
 
     if input_file_path:
-        # 선택한 파일로 관절 추적하여 결과를 저장합니다.
+        # 선택한 파일로 관절 추적하여 결과를 저장
         track_joints_and_save(input_file_path)
     else:
         print("No file selected.")
 
-# 함수를 호출하여 파일을 선택하고 관절을 추적하여 결과를 저장합니다.
+# 함수를 호출하여 파일을 선택하고 관절을 추적하여 결과를 저장
 select_input_file_and_track()
