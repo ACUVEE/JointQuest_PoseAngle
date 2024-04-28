@@ -9,11 +9,11 @@ with open("output/20240415_031753.json", "r") as file:
     correct_pose = json.load(file)
     print("correct_pose is loaded")
 # 채점할 관절 넘버 리스트
-check_nodes = ["11", "12", "13", "14", "15", "16", "23", "24", "25", "26", "27", "28"]  # 왼쪽 골반, 무릎, 발목
+check_nodes = ["11", "12", "13", "14", "15", "16", "23", "24", "25", "26", "27", "28"]
 # 오차 범위 (m)
 margin = 0.09
 # correct frame count
-output_path = "./2024_04_15.json"
+output_path = "./2024_04_26.json"
 count = 0
 size_dict = {"rl_shoulder" : [], "lr_shoulder" : [], "l_u_arm" : [], "r_u_arm" : [], "l_f_arm" : [], "r_f_arm" : [], "l_side" : [], "r_side" : [], "rl_hip" : [], "lr_hip" : [], "l_u_leg" : [], "r_u_leg" : [], "l_l_leg" : [], "r_l_leg" : [] }
 # 최소치 최대치 자를 비율
@@ -59,11 +59,11 @@ while cap.isOpened():
         # 채점 수행
         passed = compare_poses(correct_pose, landmarks_dict, margin, 12, *check_nodes)
         # 입력된 좌표로 바디 벡터 생성
-        b_vec = P_vec(landmarks_dict)
+        b_vec = P_vec(results.pose_world_landmarks.landmark)
         # 자세 일치한다면 count 증가시키고, 부위별 벡터의 크기를 누적하며 저장
         if(passed['passed']):
             print(count)
-            for key in b_vec.b_vectors.keys():
+            for key in b_vec.body_part_vectors.keys():
                 size_dict[key].append(b_vec.get_2d_vetcor_size(key))
                 
             count += 1
@@ -82,7 +82,7 @@ while cap.isOpened():
                     json.dump(size_dict,json_file, indent=4, separators=(',', ': '))
                 break
         else:
-            for key in b_vec.b_vectors.keys():
+            for key in b_vec.body_part_vectors.keys():
                 size_dict[key] = []
             count = 0
 

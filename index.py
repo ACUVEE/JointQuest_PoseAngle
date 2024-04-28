@@ -16,7 +16,7 @@ frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-# 바디크기 json
+# 부위 별 길이 json
 with open('./2024_04_15.json', 'r') as json_file:
     body_size = json.load(json_file)
 
@@ -41,35 +41,9 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, ena
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
         
         if results.pose_world_landmarks:
-            # 라벨을 붙여서 JSON 형식으로 변환
-            landmarks = [
-                (i, {"x": lm.x, "y": lm.y, "z": lm.z, "visibility": lm.visibility})
-                for i, lm in enumerate(results.pose_world_landmarks.landmark)
-            ]
-            landmarks_dict = {f"landmark_{i}": lm_data for i, lm_data in landmarks}
 
             # P_vec 클래스 할당
-            p_vec = P_vec(landmarks_dict)
-
-            # 벡터 z 값 조정
-            # p_vec.correct_vec(body_size,'l_side')
-            # p_vec.correct_vec(body_size,'l_u_leg')
-
-            # 텍스트를 표기할 타겟 관절
-            target_nums = [12, 14]
-
-            # for target_num in target_nums:
-
-            #     # 텍스트를 표기할 좌표를 위한 스케일링
-            #     target_landmark = results.pose_landmarks.landmark[target_num]
-            #     x = int(target_landmark.x * frame_width)
-            #     y = int(target_landmark.y * frame_height)
-                
-            #     # 표기할 텍스트(좌표 값)
-            #     text = str(int(round(landmarks_dict[f"landmark_{target_num}"]['x'],2)*100))+","+str(int(round(landmarks_dict[f"landmark_{target_num}"]['y'],2)*100))+","+str(int(round(landmarks_dict[f"landmark_{target_num}"]['z'],2)*100))
-                
-            #     # 텍스트를 이미지 위에 표시
-            #     cv2.putText(image, text, (x, y), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.6, (0, 255, 0), 2)
+            p_vec = P_vec(results.pose_world_landmarks.landmark)
 
             target_num = 23
             target_landmark = results.pose_landmarks.landmark[target_num]
@@ -77,8 +51,8 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, ena
             y = int(target_landmark.y * frame_height)
 
             # 표기할 텍스트(좌표 값)
-            text = str(p_vec.angle_between_vectors('l_side','l_u_leg'))
-            cv2.putText(image, text, (x, y), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.6, (0, 255, 0), 2)
+            text = str(p_vec.angle_between_vectors('l_side','l_u_leg',body_size))
+            cv2.putText(image, text, (x, y), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 0), 2)
 
             
 
