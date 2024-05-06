@@ -1,8 +1,11 @@
 import math
 import numpy as np
 import json
+
+correct_gap = 0.07
+
 class P_vec:
-    # world_landmarks가 아닌 일반 랜드마크를 고려하자
+
     # 월드 랜드마크를 인자로 받아, 각 부위별 벡터로 변환하여 저장
     def __init__(self, landmarks):
 
@@ -32,6 +35,11 @@ class P_vec:
         }
         # 부위별 벡터를 담은 딕셔너리
         self.body_part_vectors = {
+
+                          "unit_vector_x" : [1,0,0],
+                          "unit_vector_y" : [0,1,0],
+                          "unit_vector_z" : [0,0,1],
+
                           "lr_shoulder" : self.get_3d_vector(self.joint_coordinates['l_shoulder'],self.joint_coordinates['r_shoulder']), 
                           "rl_shoulder" : self.get_3d_vector(self.joint_coordinates['r_shoulder'],self.joint_coordinates['l_shoulder']), 
                           
@@ -54,7 +62,7 @@ class P_vec:
                           "r_l_leg" : self.get_3d_vector(self.joint_coordinates['r_knee'],self.joint_coordinates['r_ankle']) 
                           }
 
-    # 두 점을 받아 딕셔너리 형태의 벡터 반환
+    # dot1 -> dot2인 벡터 반환
     def get_3d_vector(self, dot1, dot2):
         x = dot2[0] - dot1[0]
         y = dot2[1] - dot1[1]
@@ -71,8 +79,10 @@ class P_vec:
 
     # 특정 부위의 벡터를 corrct
     def correct_vector(self, body_part_length:dict, partname:str):
-        length_gap = abs(body_part_length[partname]**2 - self.get_3d_vetcor_size(partname)**2)
-        if(length_gap > 2):
+        if partname.split("_")[0] == "unit":
+            return
+        length_gap = math.sqrt(abs(body_part_length[partname]**2 - self.get_3d_vetcor_size(partname)**2))
+        if(length_gap > correct_gap):
             print("z coord is corrected")
             z = math.sqrt(abs(body_part_length[partname]**2 - self.get_2d_vetcor_size(partname)**2))
 
@@ -103,7 +113,7 @@ class P_vec:
         return np.degrees(angle_in_rad)
     
     # 두 벡터간의 2D상 각도
-    def angle_between_vectors_2d(self, body_part1:str, body_part2:str):
+    def angle_between_2d_vectors(self, body_part1:str, body_part2:str):
         v1 = self.body_part_vectors[body_part1][0:2]
         v2 = self.body_part_vectors[body_part2][0:2]
 

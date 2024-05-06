@@ -4,6 +4,7 @@ import math
 import numpy as np
 from physical_vector import P_vec
 import json
+from physical_measure_copy import measure_body_size
 
 # 미디어파이프의 Pose 모듈을 사용하기 위한 초기화
 mp_drawing = mp.solutions.drawing_utils
@@ -16,12 +17,17 @@ frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS))
 
+# 유저 정보 로드
+
 # 부위 별 길이 json
-with open('./2024_04_15.json', 'r') as json_file:
+with open('./output/user1.json', 'r') as json_file:
     body_size = json.load(json_file)
 
 # Pose 모델 로드
 with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, enable_segmentation = True) as pose:
+
+    print(measure_body_size(pose,cap,"user1"))
+    
     while cap.isOpened():
         ret, frame = cap.read()
         
@@ -32,7 +38,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, ena
         # Pose 검출 수행
         results = pose.process(image)
         
-        # BGR로 다시 변환하여 화면에 출력
+        # RGB을 BGR로 변환
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         
@@ -51,7 +57,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, ena
             y = int(target_landmark.y * frame_height)
 
             # 표기할 텍스트(좌표 값)
-            text = str(p_vec.angle_between_vectors('l_side','l_u_leg',body_size))
+            text = str(p_vec.angle_between_vectors('unit_vector_y','l_u_leg',body_size))
             cv2.putText(image, text, (x, y), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 0), 2)
 
             

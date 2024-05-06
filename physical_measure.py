@@ -11,25 +11,27 @@ with open("output/20240415_031753.json", "r") as file:
 # 채점할 관절 넘버 리스트
 check_nodes = ["11", "12", "13", "14", "15", "16", "23", "24", "25", "26", "27", "28"]
 # 오차 범위 (m)
-margin = 0.09
+margin = 0.1
+# 이상치 제거를 위한 잘라낼 비율
+outlier_ratio = 0.1
+output_path = "./user1.json"
+
 # correct frame count
-output_path = "./2024_04_26.json"
 count = 0
-size_dict = {"rl_shoulder" : [], "lr_shoulder" : [], "l_u_arm" : [], "r_u_arm" : [], "l_f_arm" : [], "r_f_arm" : [], "l_side" : [], "r_side" : [], "rl_hip" : [], "lr_hip" : [], "l_u_leg" : [], "r_u_leg" : [], "l_l_leg" : [], "r_l_leg" : [] }
-# 최소치 최대치 자를 비율
-outlier_ratio = 0.2
+
+size_dict = {"lr_shoulder" : [], "rl_shoulder" : [], "l_u_arm" : [], "r_u_arm" : [], "l_f_arm" : [], "r_f_arm" : [], "l_side" : [], "r_side" : [], "lr_hip" : [], "rl_hip" : [], "l_u_leg" : [], "r_u_leg" : [], "l_l_leg" : [], "r_l_leg" : [] }
 
 # 미디어파이프 pose 모델을 가져와 실행
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 mp_drawing = mp.solutions.drawing_utils
 
-# 기본 카메라 (웹캠)에서 영상을 캡쳐하기 시작
+# 웹캠에서 영상을 캡쳐
 cap = cv2.VideoCapture(1)
 
 # 웹캠에서 넘어오는 각 프레임을 분석
 while cap.isOpened():
-    ret, frame = cap.read()  # 스트림이 끝나면 ret == False 되어 종료
+    ret, frame = cap.read()
     if not ret:
         break
 
@@ -64,7 +66,7 @@ while cap.isOpened():
         if(passed['passed']):
             print(count)
             for key in b_vec.body_part_vectors.keys():
-                size_dict[key].append(b_vec.get_2d_vetcor_size(key))
+                size_dict[key].append(b_vec.get_3d_vetcor_size(key))
                 
             count += 1
             # 자세 일치가 30 프레임을 넘어가면, 누적된 데이터로 평균 값 구하여 json으로 저장후 종료
@@ -90,6 +92,6 @@ while cap.isOpened():
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
-# 리소스 정리
+# 리소스 release
 cap.release()
 cv2.destroyAllWindows()

@@ -13,9 +13,9 @@ def process():
     # 입력할 파일 요청
     input_file_path = filedialog.askopenfilename()
     file_name, file_extension = os.path.splitext(os.path.basename(input_file_path))
-    if(file_extension != ".mp4"):
-        print("extension error")
-        return 0
+    # if(file_extension != ".mp4"):
+    #     print("extension error")
+    #     return 0
     # 출력될 mp4 경로
     output_path = "./output/"+file_name+".mp4"
     
@@ -29,8 +29,6 @@ def process():
     # png파일로 mp4 영상화
     image_path = './output/temp/'
     png2mp4(output_path,image_path ,fps)
-    
-    # 릴리즈
 
 def track_joint(mp_pose,cap):
     with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
@@ -55,7 +53,7 @@ def track_joint(mp_pose,cap):
             if results.pose_world_landmarks:
                 visualize_3d_joints(results.pose_world_landmarks, elev_val, azim_val, index, mp_pose)
                 index += 1
-                azim_val += 2
+                # azim_val += 2
         
         # 자원 해제
         cap.release()

@@ -59,7 +59,7 @@ def track_joints_and_save(input_file_path):
                 mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
                 
                 # 타겟 관절의 각도 표기
-                target_num = 26
+                target_num = 25
 
                 # 텍스트를 표기할 좌표를 위한 스케일링
                 landmark_25 = results.pose_landmarks.landmark[target_num]
@@ -72,9 +72,9 @@ def track_joints_and_save(input_file_path):
                     joints.append((round(landmark.x, 3), round(landmark.y,3), round(landmark.z,3)))
                 
                 # 각도를 구할 타겟 관절과 벡터
-                upper_joint = joints[24]
+                upper_joint = joints[23]
                 target_joint = joints[target_num]
-                lower_joint = joints[28]
+                lower_joint = joints[27]
                 upper_vec = [upper_joint[0] - target_joint[0], upper_joint[1] - target_joint[1], upper_joint[2] - target_joint[2]]
                 lower_vec = [lower_joint[0] - target_joint[0], lower_joint[1] - target_joint[1], lower_joint[2] - target_joint[2]]
 
