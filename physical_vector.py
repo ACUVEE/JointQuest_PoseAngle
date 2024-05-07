@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import json
+import time
 
 correct_gap = 0.07
 
@@ -127,12 +128,45 @@ class P_vec:
 
     # 2d벡터 크기를 json으로 저장
     def store_2d_body_size(self):
+        current_time = time.strftime("2d_%Y%m%d_%H%M%S", time.localtime())
+        filename = current_time + ".json"
         body_size = {}
         for key in self.body_part_vectors.keys():
             body_size[key] = self.get_2d_vetcor_size(key)
         
-        with open('test.json','w') as json_file:
+        with open(filename,'w') as json_file:
             json.dump(body_size,json_file, indent=4, separators=(',', ': '))
+        
+        print("2d_body_size has been stored on '{}'".format(filename))
+
+        return True
+
+    # 3d벡터 크기를 json으로 저장
+    def store_3d_body_size(self):
+        current_time = time.strftime("3d_%Y%m%d_%H%M%S", time.localtime())
+        filename = current_time + ".json"
+        body_size = {}
+        for key in self.body_part_vectors.keys():
+            body_size[key] = self.get_3d_vetcor_size(key)
+        
+        with open(filename,'w') as json_file:
+            json.dump(body_size,json_file, indent=4, separators=(',', ': '))
+
+        print("3d_body_size has been stored on '{}'".format(filename))
+
+        return True
+
+    # 관절 좌표 json으로 저장
+    def store_joint_coordinates(self):
+        current_time = time.strftime("joint_coordinates_%Y%m%d_%H%M%S", time.localtime())
+        filename = current_time + ".json"
+
+        print(self.joint_coordinates)
+
+        with open(filename,'w') as json_file:
+            json.dump(self.joint_coordinates,json_file, indent=4, separators=(',', ': '))
+
+        print("joint_coordinates have been stored on '{}'".format(filename))
 
         return True
 

@@ -8,6 +8,7 @@ import threading
 from poseprocessor import PoseProcessor
 import json
 
+
 class ClientSocket:
     def __init__(self, ip, port):
         self.TCP_SERVER_IP = ip
@@ -75,7 +76,7 @@ class ClientSocket:
         cnt = 0
         data = {}
         angles = []
-        capture = cv2.VideoCapture(1)
+        capture = cv2.VideoCapture(0)
         self.frame_width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         self.frame_height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.fps = int(capture.get(cv2.CAP_PROP_FPS))        # 웹캠 주사율
@@ -85,6 +86,8 @@ class ClientSocket:
         try:
             while capture.isOpened() and self.sendData_flag:  # 이미지 전송 플래그 확인
                 ret, frame = capture.read()
+                send_time = time.time()
+                data["send_time"] = send_time
                 frame = poseprocessor.process(frame,self.frame_width,self.frame_height)
                 angle = poseprocessor.get_angle_between_joints()
                 # angles Median Filter (변화의 정도를 가늠하기 어려움)
@@ -100,7 +103,7 @@ class ClientSocket:
                 # 데이터 인코딩
                 encode_param=[int(cv2.IMWRITE_JPEG_QUALITY),40]     # 이미지 압축품질
                 result, imgencode = cv2.imencode('.jpg', cropped_frame, encode_param)
-                encoded_image = base64.b64encode(imgencode).decode('utf-8')  # Base64 인코딩 및 문자열로 디코딩
+                encoded_image = base64.b64encode(imgencode).decode('utf-8')
                 data["image"] = encoded_image
                 json_data = json.dumps(data)
                 length = str(len(json_data))
@@ -116,7 +119,7 @@ class ClientSocket:
             capture.release()  # 캡처 해제
 
 def main():
-    client = ClientSocket('localhost', 8080)
+    client = ClientSocket('localhost', 8081)
 
 if __name__ == "__main__":
     main()

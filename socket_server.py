@@ -43,9 +43,11 @@ class SeverSocket:
 
 
     def receiveImages(self):
-
         try:
+            maximum_delay = 0
+            cnt = 0
             while True:
+                cnt +=1
                 length = self.recvall(self.conn, 64)
                 if length == None:
                     cv2.destroyAllWindows()
@@ -53,11 +55,19 @@ class SeverSocket:
                 json_data = json.loads(self.recvall(self.conn, int(length1)).decode('utf-8'))
                 encoded_image = json_data["image"]
                 angle = json_data["angle"]
+                send_time = json_data["send_time"]
                 if angle:
                     print(angle)
+                
                 image = numpy.frombuffer(base64.b64decode(encoded_image), numpy.uint8)
                 decimg = cv2.imdecode(image, 1)
                 cv2.imshow("image", decimg)
+                if send_time:
+                    recieve_time = time.time()
+                    delay = recieve_time - send_time
+                    if maximum_delay < delay and cnt > 5:
+                        maximum_delay = delay
+                    print(maximum_delay)
                 cv2.waitKey(1)
         except Exception as e:
             print(e)
@@ -78,7 +88,7 @@ class SeverSocket:
         return buf
 
 def main():
-    server = SeverSocket('localhost', 8080)
+    server = SeverSocket('localhost', 8081)
 
 if __name__ == "__main__":
     main()

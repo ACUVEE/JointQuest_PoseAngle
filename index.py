@@ -4,7 +4,7 @@ import math
 import numpy as np
 from physical_vector import P_vec
 import json
-from physical_measure_copy import measure_body_size
+from physical_measure import measure_body_size
 
 # 미디어파이프의 Pose 모듈을 사용하기 위한 초기화
 mp_drawing = mp.solutions.drawing_utils
