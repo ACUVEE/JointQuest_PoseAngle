@@ -59,10 +59,7 @@ with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, ena
             # 표기할 텍스트(좌표 값)
             text = str(p_vec.angle_between_vectors('unit_vector_y','l_u_leg',body_size))
             cv2.putText(image, text, (x, y), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 0), 2)
-
             
-
-
         if results.pose_world_landmarks:
             world_landmarks = [
                 (i, {"x": lm.x, "y": lm.y, "z": lm.z, "visibility": lm.visibility})

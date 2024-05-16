@@ -35,7 +35,9 @@ class SeverSocket:
         while True:
             try:
                 message = input("요청쓰레드: ")
-                self.conn.sendall(message.encode())
+                data = {'command' : message}
+                json_data = json.dumps(data)
+                self.conn.sendall(json_data.encode('utf-8'))
 
             except Exception as e:
                 print("전송 오류: ",e)
@@ -44,33 +46,28 @@ class SeverSocket:
 
     def receiveImages(self):
         try:
-            maximum_delay = 0
             cnt = 0
             while True:
+                filtered_dict = {}
+                json_data = None
                 cnt +=1
                 length = self.recvall(self.conn, 64)
                 if length == None:
                     cv2.destroyAllWindows()
                 length1 = length.decode('utf-8')
                 json_data = json.loads(self.recvall(self.conn, int(length1)).decode('utf-8'))
-                encoded_image = json_data["image"]
-                angle = json_data["angle"]
-                send_time = json_data["send_time"]
-                if angle:
-                    print(angle)
+                # encoded_image = json_data["image"]
+                exclude_key = 'images'
+                filtered_dict = {key: value for key, value in json_data.items() if key != exclude_key}
+
+                print(filtered_dict)
                 
-                image = numpy.frombuffer(base64.b64decode(encoded_image), numpy.uint8)
-                decimg = cv2.imdecode(image, 1)
-                cv2.imshow("image", decimg)
-                if send_time:
-                    recieve_time = time.time()
-                    delay = recieve_time - send_time
-                    if maximum_delay < delay and cnt > 5:
-                        maximum_delay = delay
-                    print(maximum_delay)
-                cv2.waitKey(1)
+                # image = numpy.frombuffer(base64.b64decode(encoded_image), numpy.uint8)
+                # decimg = cv2.imdecode(image, 1)
+                # cv2.imshow("image", decimg)
+                # cv2.waitKey(1)
         except Exception as e:
-            print(e)
+            print(f"Data error: {e}")
             self.socketClose()
             cv2.destroyAllWindows()
             self.socketOpen()

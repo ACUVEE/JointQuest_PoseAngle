@@ -1,6 +1,6 @@
 # 두 포즈를 비교해서 노드들이 비슷한 위치에 있는지 검사
 def compare_poses(
-    ref_pose: dict, comp_pose: dict, margin: float, pass_threshold: int, *nodes: list
+        ref_pose: dict, comp_pose: dict, margin: float, pass_threshold: int, *nodes: list
 ) -> dict:
     """
     파라미터:
@@ -29,6 +29,7 @@ def compare_poses(
     # 리스트의 각 노드에 대해 비교 수행
     count = 0
     passed_nodes = []  # 통과한 노드 리스트
+    failed_nodes = []  # 통과 못한 노드 리스트
     for node in nodes:
         # 기준 노드와 비교 노드의 위치 가져오기
         ref_x, ref_y = get_node_position(ref_pose, node)
@@ -36,10 +37,12 @@ def compare_poses(
 
         # 비교 노드가 기준 노드 근처에 있을 때 카운터 증가
         if is_within_margin(ref_x, comp_x, margin) and is_within_margin(
-            ref_y, comp_y, margin
+                ref_y, comp_y, margin
         ):
             count += 1
             passed_nodes.append(node)
+        else:
+            failed_nodes.append(node)
 
     # pass_threshold에 비교해 통과한 노드 수와 그의 리스트, 그리고 통과 여부 리턴
     return {
@@ -47,6 +50,7 @@ def compare_poses(
         "threshold": pass_threshold,
         "count": count,
         "passed_nodes": passed_nodes,
+        "failed_nodes": failed_nodes,
     }
 
 
@@ -56,11 +60,11 @@ ref_pose = {
     "landmark_1": {"x": 0.460, "y": 0.257, "z": -0.210, "visibility": 0.999},
 }
 comp_pose_right = {
-    "landmark_0": {"x": 0.454, "y": 0.275, "z": -0.24, "visibility": 0.999},
+    "landmark_0": {"x": 0.454, "y": 0.275, "z": -0.240, "visibility": 0.999},
     "landmark_1": {"x": 0.100, "y": 0.100, "z": -0.210, "visibility": 0.999},
 }
 comp_pose_wrong = {
-    "landmark_0": {"x": 0.100, "y": 0.100, "z": -0.01, "visibility": 0.999},
+    "landmark_0": {"x": 0.100, "y": 0.100, "z": -0.001, "visibility": 0.999},
     "landmark_1": {"x": 0.100, "y": 0.100, "z": -0.001, "visibility": 0.999},
 }
 
