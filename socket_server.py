@@ -56,16 +56,17 @@ class SeverSocket:
                     cv2.destroyAllWindows()
                 length1 = length.decode('utf-8')
                 json_data = json.loads(self.recvall(self.conn, int(length1)).decode('utf-8'))
-                # encoded_image = json_data["image"]
-                exclude_key = 'images'
+                
+                exclude_key = 'image'
                 filtered_dict = {key: value for key, value in json_data.items() if key != exclude_key}
 
                 print(filtered_dict)
-                
-                # image = numpy.frombuffer(base64.b64decode(encoded_image), numpy.uint8)
-                # decimg = cv2.imdecode(image, 1)
-                # cv2.imshow("image", decimg)
-                # cv2.waitKey(1)
+                if json_data["image"]:
+                    encoded_image = json_data["image"]
+                    image = numpy.frombuffer(base64.b64decode(encoded_image), numpy.uint8)
+                    decimg = cv2.imdecode(image, 1)
+                cv2.imshow("image", decimg)
+                cv2.waitKey(1)
         except Exception as e:
             print(f"Data error: {e}")
             self.socketClose()

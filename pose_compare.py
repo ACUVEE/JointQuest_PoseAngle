@@ -52,21 +52,3 @@ def compare_poses(
         "passed_nodes": passed_nodes,
         "failed_nodes": failed_nodes,
     }
-
-
-# 예시 데이터 (딕셔너리 형태)
-ref_pose = {
-    "landmark_0": {"x": 0.464, "y": 0.270, "z": -0.241, "visibility": 0.999},
-    "landmark_1": {"x": 0.460, "y": 0.257, "z": -0.210, "visibility": 0.999},
-}
-comp_pose_right = {
-    "landmark_0": {"x": 0.454, "y": 0.275, "z": -0.240, "visibility": 0.999},
-    "landmark_1": {"x": 0.100, "y": 0.100, "z": -0.210, "visibility": 0.999},
-}
-comp_pose_wrong = {
-    "landmark_0": {"x": 0.100, "y": 0.100, "z": -0.001, "visibility": 0.999},
-    "landmark_1": {"x": 0.100, "y": 0.100, "z": -0.001, "visibility": 0.999},
-}
-
-result = compare_poses(ref_pose, comp_pose_wrong, 0.05, 1, "landmark_0", "landmark_1")
-print(result)  # Output: True or False

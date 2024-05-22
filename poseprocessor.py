@@ -88,26 +88,3 @@ class PoseProcessor():
                         cv2.circle(frame, center_coordinates, radius ,color, thickness)
 
         return frame
-    
-
-# # 캡처 객체 및 프레임 크기
-# cap = cv2.VideoCapture(1)
-# frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-# frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-# # 미디어 파이프 클래스 객체 생성
-# asd = qwe()
-
-# while cap.isOpened():
-#     ret, frame = cap.read()
-#     # 프레임 처리
-#     frame = asd.process(frame, frame_width, frame_height)
-
-#     # 프레임 출력
-#     cv2.imshow("asd", frame)
-#     if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
-
-# # 자원 해제
-# cap.release()
-# cv2.destroyAllWindows()
