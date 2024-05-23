@@ -13,7 +13,7 @@ import math
 Json
 {
     "image":None,
-    "angle": Num,
+    "angle": dict(Jsont),           {"hip_angle": 20, "knee_angle": 10, "hip_horizon_angle": 12}
     "incorrect_joint": List<str>,
     "body_length": dict(json),
     "error": str
@@ -382,7 +382,7 @@ class ClientSocket:
                 json_data = json.dumps(data)
                 length = str(len(json_data))
 
-                # self.sock.sendall(length.encode('utf-8').ljust(64))
+                self.sock.sendall(length.encode('utf-8').ljust(64))
                 self.sock.send(json_data.encode('utf-8'))
                 print(u'send images %d'%(cnt))
                 cnt+=1
