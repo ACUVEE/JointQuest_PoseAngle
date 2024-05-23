@@ -7,6 +7,7 @@ import base64
 import threading
 from poseprocessor import PoseProcessor
 import json
+import math
 """
 송신 데이터
 Json
@@ -371,14 +372,17 @@ class ClientSocket:
                 if len(angles) > 5:
                     del angles[0]
                 if not cnt%5 == 0:
-                    data["angle"] = np.median(angles)
+                    if math.isnan(np.median(angles)):
+                        data["angle"] = None
+                    else:
+                        data["angle"] = np.median(angles)
                 else:
                     data["angle"] = None
 
                 json_data = json.dumps(data)
                 length = str(len(json_data))
 
-                self.sock.sendall(length.encode('utf-8').ljust(64))
+                # self.sock.sendall(length.encode('utf-8').ljust(64))
                 self.sock.send(json_data.encode('utf-8'))
                 print(u'send images %d'%(cnt))
                 cnt+=1
