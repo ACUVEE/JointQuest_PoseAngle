@@ -40,6 +40,10 @@ class P_vec:
                           "unit_vector_x" : [1,0,0],
                           "unit_vector_y" : [0,1,0],
                           "unit_vector_z" : [0,0,1],
+                          "unit_vector_-x" : [-1,0,0],
+                          "unit_vector_-y" : [0,-1,0],
+                          "unit_vector_-z" : [0,0,-1],
+
 
                           "lr_shoulder" : self.get_3d_vector(self.joint_coordinates['l_shoulder'],self.joint_coordinates['r_shoulder']), 
                           "rl_shoulder" : self.get_3d_vector(self.joint_coordinates['r_shoulder'],self.joint_coordinates['l_shoulder']), 

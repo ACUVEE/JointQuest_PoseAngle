@@ -8,6 +8,14 @@ import threading
 from poseprocessor import PoseProcessor
 import json
 import math
+
+"""
+신체측정자세,준비자세 데이터 수정 및 경로 분리
+웹캠 변경 명령(자원 해제 코드도 필요함)
+
+
+"""
+
 """
 송신 데이터
 Json
@@ -40,7 +48,7 @@ class ClientSocket:
             "body_length": None,
             "error": None
         }
-        self.webcam_index = 1
+        self.webcam_index = 0
         # 소켓 연결
         self.connection_attempts = 0
         self.sock = None
@@ -67,12 +75,25 @@ class ClientSocket:
             print(u'%d times try to connect with server'%(self.connection_attempts))
             self.connect_server()
 
+    def send_data(self, data):
+        """
+        데이터 전송 함수
+        
+        parameters:
+            data(dict): 전송할 데이터
+        """
+        json_data = json.dumps(data)
+        length = str(len(json_data))
+        
+        self.sock.sendall(length.encode('utf-8').ljust(64))
+        self.sock.send(json_data.encode('utf-8'))
+
     def send_error(self,err_msg):
         """
         에러를 서버에게 전달하는 함수
 
-        매개변수:
-            e
+        parameters:
+            err_msg(str): 발생한 에러의 메시지
         """
         data = self.data_form.copy()
         data["error"] = err_msg
@@ -93,7 +114,7 @@ class ClientSocket:
             3. 신체길이 측정 - 길이측정
             4. 무릎 운동
         """
-        self.setup_webcam(1)
+        self.setup_webcam(self.webcam_index)
         try:
             while not self.shutdown_system_event.is_set():
                 data = self.sock.recv(1024).decode().strip()
@@ -122,6 +143,15 @@ class ClientSocket:
     def setup_webcam(self, webcam_index):
         """
         웹캠 자원 할당 및 정보 가져오는 함수
+
+        parmeters:
+            webcam_index(int): 사용할 웹캠의 인덱스
+
+        modifies:
+            self.capture
+            self.frame_width
+            self.frame_height
+            self.fps
         """
         try:
             print("importing webcam resources")
@@ -138,6 +168,9 @@ class ClientSocket:
             self.send_error(err_msg)
 
     def display_webcam(self):
+        """
+        웹캠 화면을 띄우는 함수(테스트용)
+        """
         
         if not self.capture.isOpened():
             print("Error: Could not open webcam.")
@@ -167,7 +200,7 @@ class ClientSocket:
         """
         특정 함수를 서브 쓰레드로 수행시키는 함수
 
-        매개변수:
+        parameters:
             target : 수행시킬 함수명
         """
         self.shutdown_thread_event.clear()
@@ -191,11 +224,11 @@ class ClientSocket:
         self.sock.close()
         print("Socket closed and resources cleaned up.")
 
-    def finalize_image(self,image:np.ndarray,target = -1, angle = 0):
+    def finalize_image(self,image):
         """
         이미지 처리 최종 단계(crop, compress, encode) 함수
 
-        매개변수
+        parameters:
             image(numpy.ndarray) : 이미지
         """
         # 프레임 가공 데이터
@@ -256,7 +289,7 @@ class ClientSocket:
                 if not ret:
                     raise Exception("Failed to read frame from webcam.")
                 
-                frame = poseprocessor.process(frame,self.frame_width,self.frame_height)
+                frame = poseprocessor.initialize(frame)
                 pose_check_result = poseprocessor.check_pose(correct_pose, check_nodes, margin)
                 frame = poseprocessor.draw_incorrect_joints(frame,self.frame_width,self.frame_height)
                 encoded_image = self.finalize_image(frame)
@@ -322,14 +355,14 @@ class ClientSocket:
                 ret, frame = self.capture.read()
                 if not ret:
                     raise Exception("Failed to read frame from webcam.")
-                frame = poseprocessor.process(frame,self.frame_width,self.frame_height)
+                frame = poseprocessor.initialize(frame)
                 pose_check_result = poseprocessor.check_pose(correct_pose, idle_check_nodes, margin)
                 frame = poseprocessor.draw_incorrect_joints(frame,self.frame_width,self.frame_height)
                 encoded_image = self.finalize_image(frame)
                 data["image"] = encoded_image
 
                 if pose_check_result and pose_check_result["passed"]:
-                    angle = poseprocessor.get_angle_between_joints()
+                    angle = poseprocessor.get_angle_between_joints(target_movement="l_vertical_hip")
                     idle_cnt +=1
                     if(idle_cnt >= 60):
                         data["angle"] = np.median(idle_angles)
@@ -358,14 +391,14 @@ class ClientSocket:
             while self.capture.isOpened() and not self.shutdown_thread_event.is_set():
                 data = self.data_form.copy()
                 ret, frame = self.capture.read()
-                frame = poseprocessor.process(frame,self.frame_width,self.frame_height)
+                frame = poseprocessor.initialize(frame)
                 pose_check_result = poseprocessor.check_pose(correct_pose, check_nodes, margin)
                 frame = poseprocessor.draw_incorrect_joints(frame,self.frame_width,self.frame_height)
                 encoded_image = self.finalize_image(frame)
                 data["image"] = encoded_image
                 if pose_check_result and pose_check_result["failed_nodes"]:
                     data["incorrect_joint"] = pose_check_result["failed_nodes"]
-                angle = poseprocessor.get_angle_between_joints()
+                angle = poseprocessor.get_angle_between_joints(target_movement="l_vertical_hip")
                 
                 # angles Median Filter
                 angles.append(angle)
