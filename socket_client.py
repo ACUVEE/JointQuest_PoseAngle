@@ -377,7 +377,7 @@ class ClientSocket:
                 data["image"] = encoded_image
 
                 if pose_check_result and pose_check_result["passed"]:
-                    angle = poseprocessor.get_angle_between_joints(target_movement="l_vertical_hip")
+                    angle = poseprocessor.get_angle_between_joints("l_vertical_hip", body_length)
                     idle_cnt +=1
                     if(idle_cnt >= 60):
                         data["angle"] = np.median(idle_angles)
@@ -413,7 +413,7 @@ class ClientSocket:
                 data["image"] = encoded_image
                 if pose_check_result and pose_check_result["failed_nodes"]:
                     data["incorrect_joint"] = pose_check_result["failed_nodes"]
-                angle = poseprocessor.get_angle_between_joints(target_movement="l_vertical_hip")
+                angle = poseprocessor.get_angle_between_joints("l_vertical_hip",body_length)
                 
                 # angles Median Filter
                 angles.append(angle)
