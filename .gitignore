@@ -5,3 +5,4 @@ __pycache__/
 user/
 trashbin/
 .venv
+__pycache__
