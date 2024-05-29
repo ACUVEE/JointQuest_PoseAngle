@@ -48,7 +48,7 @@ class PoseProcessor():
             self.mp_drawing.draw_landmarks(image, self.joints.pose_landmarks, self.mp_pose.POSE_CONNECTIONS)
         return image
     
-    def get_angle_between_joints(self, target_movement:str)->float:
+    def get_angle_between_joints(self, target_movement:str, body_length:dict = {})->float:
         """
         특정 동작에 대한 각도를 구하는 함수
 
@@ -67,19 +67,19 @@ class PoseProcessor():
         if self.joints.pose_world_landmarks:
             # 고관절 굴곡 신전 (굴곡 180 ~ 신전 0)
             if target_movement == "r_vertical_hip":
-                angle = self.p_vec.angle_between_vectors('unit_vector_y','r_u_leg')
+                angle = self.p_vec.angle_between_vectors('unit_vector_y','r_u_leg',body_length)
             elif target_movement == "l_vertical_hip":
-                angle = self.p_vec.angle_between_vectors('unit_vector_y','l_u_leg')
+                angle = self.p_vec.angle_between_vectors('unit_vector_y','l_u_leg',body_length)
             # 고관절 외전 내전 (내전 0 ~ 외전180 )
             elif target_movement == "r_lateral_hip":
-                angle = self.p_vec.angle_between_vectors('unit_vector_x','r_u_leg')
+                angle = self.p_vec.angle_between_vectors('unit_vector_x','r_u_leg',body_length)
             elif target_movement == "l_lateral_hip":
-                angle = self.p_vec.angle_between_vectors('unit_vector_-x','l_u_leg')
+                angle = self.p_vec.angle_between_vectors('unit_vector_-x','l_u_leg',body_length)
             # 무릎 굴곡 신전 (굴곡 180 ~ 신전 0)
             elif target_movement == "r_vertical_knee":
-                angle = self.p_vec.angle_between_vectors('r_u_leg','r_l_leg')
+                angle = self.p_vec.angle_between_vectors('r_u_leg','r_l_leg',body_length)
             elif target_movement == "l_vertical_knee":
-                angle = self.p_vec.angle_between_vectors('l_u_leg','l_l_leg')
+                angle = self.p_vec.angle_between_vectors('l_u_leg','l_l_leg',body_length)
             return angle
         return math.nan
     
@@ -110,7 +110,7 @@ class PoseProcessor():
     
     def initialize(self, frame,):
         """
-        필수요소 세팅을 위한 함수 수행하는 함수
+        필수요소 세팅을 위한 일련의 함수 호출 (새로운 프레임에 대한 작업을 수행할 때 항상 먼저 호출하여야함)
         """
         self.detect_joint(frame)    # 필수
         image = self.draw_landmark(frame)   # 필수 X
@@ -147,7 +147,7 @@ class PoseProcessor():
         preconditoins:
             self.joints가 detect_joint 함수 호출로 초기화 된 상태여야함
 
-        Modifies:
+        modifies:
             self.incoorect_joints: 잘못된 위치에 있는 관절의 리스트로 초기화
 
         return:

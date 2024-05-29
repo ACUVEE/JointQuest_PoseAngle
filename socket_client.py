@@ -122,16 +122,20 @@ class ClientSocket:
                     break
                 json_data = json.loads(data)
                 command = json_data["command"]
-                if command == '0':
+                if command == 'shutdown_connection':
                     self.shutdown_system_event.set()
-                elif command == '1':
+                elif command == 'stop_thread':
                     self.stop_threads()
-                elif command == '2':
+                elif command == 'connection_test':
                     self.start_thread(self.connection_test)
-                elif command == '3':
+                elif command == 'measuring_body':
                     self.start_thread(self.measure_body_length)
-                elif command == '4':
-                    self.start_thread(self.knee_game)
+                elif command == 'knee_game':
+                    if json_data["body_length"]:
+                        body_length = json_data["body_length"]
+                        self.start_thread(self.knee_game, body_length)
+                    else:
+                        self.start_thread(self.knee_game)
         except Exception as e:
             err_msg = f'Error in receiving command: {e}'
             print(err_msg)
@@ -166,6 +170,13 @@ class ClientSocket:
             err_msg = f"Error with importing webcam resources : {e}"
             print(err_msg)
             self.send_error(err_msg)
+    
+    def release_webcam(self):
+        """
+        웹캠 자원 해제하는 함수
+        """
+        self.capture.release()
+
 
     def display_webcam(self):
         """
@@ -196,7 +207,7 @@ class ClientSocket:
         self.capture.release()
         cv2.destroyAllWindows()
 
-    def start_thread(self, target):
+    def start_thread(self, target, *args):
         """
         특정 함수를 서브 쓰레드로 수행시키는 함수
 
@@ -204,7 +215,7 @@ class ClientSocket:
             target : 수행시킬 함수명
         """
         self.shutdown_thread_event.clear()
-        thread = threading.Thread(target = target, daemon=True)
+        thread = threading.Thread(target = target, args=(args), daemon=True)
         thread.start()
         self.threads.append(thread)
 
@@ -269,6 +280,7 @@ class ClientSocket:
         """
         print("preparing for measuring BodyLength")
         # 자세판단 파라미터
+        # pose_path = "data/pose_data/measuring_pose.json"
         pose_path = "output/20240415_031753.json"
         with open(pose_path, "r") as file:
             correct_pose = json.load(file)
@@ -331,10 +343,13 @@ class ClientSocket:
             self.send_error(err_msg)
 
 # 준비자세의 일정 시간 유지 판정 후 (충분한 준비자세 유지 시, 준비자세 동안의 타겟 관절의 각도를 전달) 실시간 각도 값 전송
-    def knee_game(self,):
+    def knee_game(self,body_length:dict = {}):
         """
-        사용자의 준비자세 체크 후(2초)
+        사용자의 준비자세 체크 후(준비자세를 2초가량 유지)
         사용자의 고관절 각도 (무릎 각도)를 넘겨줌
+
+        parameters:
+            body_length(dict): 사용자의 신체 길이가 담긴 dict 데이터
         """
         # 자세판단 파라미터
         pose_path = "output/20240415_031753.json"
