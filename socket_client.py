@@ -1,19 +1,20 @@
-import cv2
-import sys
-import socket
-import numpy as np
-import time
 import base64
-import threading
-from poseprocessor import PoseProcessor
 import json
 import math
+import socket
+import sys
+import threading
+import time
+
+import cv2
+import numpy as np
+
+from data_form import data_form
+from poseprocessor import PoseProcessor
 
 """
 신체측정자세,준비자세 데이터 수정 및 경로 분리
-웹캠 변경 명령(자원 해제 코드도 필요함)
-
-
+웹캠 변경 명령(자원 해제 코드도 필요함) 
 """
 
 """
@@ -33,6 +34,8 @@ Json
     "command":
 }
 """
+
+
 class ClientSocket:
     def __init__(self, ip, port):
         self.TCP_SERVER_IP = ip
@@ -41,13 +44,7 @@ class ClientSocket:
         self.shutdown_thread_event = threading.Event()
         self.shutdown_system_event = threading.Event()
         self.threads = []
-        self.data_form = {
-            "image":None,
-            "angle":None,
-            "incorrect_joint": None,
-            "body_length": None,
-            "error": None
-        }
+        self.data_form = data_form.copy()
         self.webcam_index = 0
         # 소켓 연결
         self.connection_attempts = 0
@@ -56,12 +53,13 @@ class ClientSocket:
 
     # 서버 연결 펑션
     def connect_server(self):
-        
         try:
             # 연결시도
             self.sock = socket.socket()
             self.sock.connect((self.TCP_SERVER_IP, self.TCP_SERVER_PORT))
-            print(u'Client socket is connected with Server socket [ TCP_SERVER_IP: ' + self.TCP_SERVER_IP + ', TCP_SERVER_PORT: ' + str(self.TCP_SERVER_PORT) + ' ]')
+            print(
+                f"Client socket is connected with Server socket [ TCP_SERVER_IP:  {self.TCP_SERVER_IP} , "
+                f"TCP_SERVER_PORT: {self.TCP_SERVER_PORT} ]")
             self.connection_attempts = 0
             # 서버로부터 커맨드 입력 대기
             self.receive_commands()
@@ -70,9 +68,9 @@ class ClientSocket:
             self.connection_attempts += 1
             # 연결 시도 5회 넘어가면 프로세스 종료
             if self.connection_attempts == 5:
-                print(u'Connect fail %d times. exit program'%(self.connection_attempts))
+                print(f"Connect failed {self.connection_attempts} times. Exit program.")
                 sys.exit()
-            print(u'%d times try to connect with server'%(self.connection_attempts))
+            print(f"{self.connection_attempts} attempts to connect with server")
             self.connect_server()
 
     def send_data(self, data):
@@ -84,11 +82,11 @@ class ClientSocket:
         """
         json_data = json.dumps(data)
         length = str(len(json_data))
-        
-        self.sock.sendall(length.encode('utf-8').ljust(64))
-        self.sock.send(json_data.encode('utf-8'))
 
-    def send_error(self,err_msg):
+        self.sock.sendall(length.encode("utf-8").ljust(64))
+        self.sock.send(json_data.encode("utf-8"))
+
+    def send_error(self, err_msg):
         """
         에러를 서버에게 전달하는 함수
 
@@ -99,9 +97,9 @@ class ClientSocket:
         data["error"] = err_msg
         json_data = json.dumps(data)
         length = str(len(json_data))
-        
-        self.sock.sendall(length.encode('utf-8').ljust(64))
-        self.sock.send(json_data.encode('utf-8'))
+
+        self.sock.sendall(length.encode("utf-8").ljust(64))
+        self.sock.send(json_data.encode("utf-8"))
 
     def receive_commands(self):
         """
@@ -140,7 +138,7 @@ class ClientSocket:
             err_msg = f'Error in receiving command: {e}'
             print(err_msg)
             self.send_error(err_msg)
-            
+
         finally:
             self.cleanup()
 
@@ -170,39 +168,38 @@ class ClientSocket:
             err_msg = f"Error with importing webcam resources : {e}"
             print(err_msg)
             self.send_error(err_msg)
-    
+
     def release_webcam(self):
         """
         웹캠 자원 해제하는 함수
         """
         self.capture.release()
 
-
     def display_webcam(self):
         """
         웹캠 화면을 띄우는 함수(테스트용)
         """
-        
+
         if not self.capture.isOpened():
             print("Error: Could not open webcam.")
             return
-        
+
         print("Webcam is open. Press 'q' to quit.")
-        
+
         while True:
             ret, frame = self.capture.read()
-            
+
             if not ret:
                 print("Error: Failed to grab frame.")
                 break
-            
+
             # 화면에 프레임 표시
             cv2.imshow("Webcam", frame)
-            
+
             # 'q' 키를 누르면 루프를 빠져나옴
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-        
+
         # 자원 해제
         self.capture.release()
         cv2.destroyAllWindows()
@@ -215,7 +212,7 @@ class ClientSocket:
             target : 수행시킬 함수명
         """
         self.shutdown_thread_event.clear()
-        thread = threading.Thread(target = target, args=(args), daemon=True)
+        thread = threading.Thread(target=target, args=(args), daemon=True)
         thread.start()
         self.threads.append(thread)
 
@@ -235,7 +232,7 @@ class ClientSocket:
         self.sock.close()
         print("Socket closed and resources cleaned up.")
 
-    def finalize_image(self,image):
+    def finalize_image(self, image):
         """
         이미지 처리 최종 단계(crop, compress, encode) 함수
 
@@ -243,15 +240,15 @@ class ClientSocket:
             image(numpy.ndarray) : 이미지
         """
         # 프레임 가공 데이터
-        aspect_ratio = 1        # 프레임 crop 비율 x:y
+        aspect_ratio = 1  # 프레임 crop 비율 x:y
         crop_width = min(self.frame_width, int(self.frame_height * aspect_ratio))
         crop_height = min(self.frame_height, int(self.frame_width / aspect_ratio))
-        start_x = int((self.frame_width - crop_width)/ 2)
-        start_y = int((self.frame_height - crop_height)/ 2)
+        start_x = int((self.frame_width - crop_width) / 2)
+        start_y = int((self.frame_height - crop_height) / 2)
         cropped_frame = image[start_y:start_y + crop_height, start_x:start_x + crop_width]
-        encode_param=[int(cv2.IMWRITE_JPEG_QUALITY),40]     # 이미지 압축품질
-        result, imgencode = cv2.imencode('.jpg', cropped_frame, encode_param)
-        encoded_image = base64.b64encode(imgencode).decode('utf-8')
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 40]  # 이미지 압축품질
+        result, imgencode = cv2.imencode(".jpg", cropped_frame, encode_param)
+        encoded_image = base64.b64encode(imgencode).decode("utf-8")
 
         return encoded_image
 
@@ -259,7 +256,7 @@ class ClientSocket:
         """
         소켓 연결을 테스트 하기 위한 함수
         """
-        print("testing socket connection...")
+        print("Testing socket connection...")
         cnt = 0
         while not self.shutdown_thread_event.is_set():
             data = self.data_form.copy()
@@ -269,16 +266,15 @@ class ClientSocket:
             json_data = json.dumps(data)
             length = str(len(json_data))
 
-            self.sock.sendall(length.encode('utf-8').ljust(64))
-            self.sock.send(json_data.encode('utf-8'))
+            self.sock.sendall(length.encode("utf-8").ljust(64))
+            self.sock.send(json_data.encode("utf-8"))
             time.sleep(1)
-
 
     def measure_body_length(self):
         """
         사용자 신체 길이 측정 함수
         """
-        print("preparing for measuring BodyLength")
+        print("Preparing for measuring BodyLength")
         # 자세판단 파라미터
         # pose_path = "data/pose_data/measuring_pose.json"
         pose_path = "output/20240415_031753.json"
@@ -290,7 +286,9 @@ class ClientSocket:
         # 신체측정 파라미터
         cnt = 0
         outlier_ratio = 0.1
-        size_dict = {"lr_shoulder" : [], "rl_shoulder" : [], "l_u_arm" : [], "r_u_arm" : [], "l_f_arm" : [], "r_f_arm" : [], "l_side" : [], "r_side" : [], "lr_hip" : [], "rl_hip" : [], "l_u_leg" : [], "r_u_leg" : [], "l_l_leg" : [], "r_l_leg" : [] }
+        size_dict = {"lr_shoulder": [], "rl_shoulder": [], "l_u_arm": [], "r_u_arm": [], "l_f_arm": [], "r_f_arm": [],
+                     "l_side": [], "r_side": [], "lr_hip": [], "rl_hip": [], "l_u_leg": [], "r_u_leg": [],
+                     "l_l_leg": [], "r_l_leg": []}
 
         # 포즈 추적을 위한 PoseProcessor할당(mediapipe)
         poseprocessor = PoseProcessor()
@@ -300,25 +298,25 @@ class ClientSocket:
                 ret, frame = self.capture.read()
                 if not ret:
                     raise Exception("Failed to read frame from webcam.")
-                
+
                 frame = poseprocessor.initialize(frame)
                 pose_check_result = poseprocessor.check_pose(correct_pose, check_nodes, margin)
-                frame = poseprocessor.draw_incorrect_joints(frame,self.frame_width,self.frame_height)
+                frame = poseprocessor.draw_incorrect_joints(frame, self.frame_width, self.frame_height)
                 encoded_image = self.finalize_image(frame)
-                
+
                 data["image"] = encoded_image
-                
+
                 # 자세 일치 60프레임 이상 지속 -> 신체 길이 담은 데이터 포함하여 전송
                 if pose_check_result and pose_check_result["passed"]:
                     size_dict = poseprocessor.get_body_length(size_dict)
-                    cnt +=1
-                    if(cnt >= 60):
+                    cnt += 1
+                    if cnt >= 60:
                         for key in size_dict.keys():
                             size_dict[key].sort()
                             length = len(size_dict[key])
-                            remove_amount = int(length*outlier_ratio)
+                            remove_amount = int(length * outlier_ratio)
                             tmp = size_dict[key][remove_amount:(length - remove_amount)]
-                            size_dict[key] = sum(tmp)/len(tmp)
+                            size_dict[key] = sum(tmp) / len(tmp)
 
                         data["body_length"] = size_dict
 
@@ -334,16 +332,16 @@ class ClientSocket:
                 length = str(len(json_data))
 
                 # 데이터 전송
-                self.sock.sendall(length.encode('utf-8').ljust(64))
-                self.sock.send(json_data.encode('utf-8'))
-                print(u'count: %d'%(cnt))
+                self.sock.sendall(length.encode("utf-8").ljust(64))
+                self.sock.send(json_data.encode("utf-8"))
+                print(f"count: {cnt}")
         except Exception as e:
             err_msg = f"Error in measuring_body_length: {e}"
             print(err_msg)
             self.send_error(err_msg)
 
-# 준비자세의 일정 시간 유지 판정 후 (충분한 준비자세 유지 시, 준비자세 동안의 타겟 관절의 각도를 전달) 실시간 각도 값 전송
-    def knee_game(self,body_length:dict = {}):
+    # 준비자세의 일정 시간 유지 판정 후 (충분한 준비자세 유지 시, 준비자세 동안의 타겟 관절의 각도를 전달) 실시간 각도 값 전송
+    def knee_game(self, body_length: dict = {}):
         """
         사용자의 준비자세 체크 후(준비자세를 2초가량 유지)
         사용자의 고관절 각도 (무릎 각도)를 넘겨줌
@@ -356,7 +354,7 @@ class ClientSocket:
         with open(pose_path, "r") as file:
             correct_pose = json.load(file)
         idle_check_nodes = ["11", "12", "13", "14", "15", "16", "23", "24", "25", "26", "27", "28"]
-        check_nodes = ["11", "12",]
+        check_nodes = ["11", "12", ]
         margin = 0.1
         idle_cnt = 0
         idle_angles = []
@@ -372,21 +370,21 @@ class ClientSocket:
                     raise Exception("Failed to read frame from webcam.")
                 frame = poseprocessor.initialize(frame)
                 pose_check_result = poseprocessor.check_pose(correct_pose, idle_check_nodes, margin)
-                frame = poseprocessor.draw_incorrect_joints(frame,self.frame_width,self.frame_height)
+                frame = poseprocessor.draw_incorrect_joints(frame, self.frame_width, self.frame_height)
                 encoded_image = self.finalize_image(frame)
                 data["image"] = encoded_image
 
                 if pose_check_result and pose_check_result["passed"]:
                     angle = poseprocessor.get_angle_between_joints("l_vertical_hip", body_length)
-                    idle_cnt +=1
-                    if(idle_cnt >= 60):
+                    idle_cnt += 1
+                    if idle_cnt >= 60:
                         data["angle"] = np.median(idle_angles)
                         json_data = json.dumps(data)
                         length = str(len(json_data))
 
                         # 데이터 전송 (데이터 크기, 데이터)
-                        self.sock.sendall(length.encode('utf-8').ljust(64))
-                        self.sock.send(json_data.encode('utf-8'))
+                        self.sock.sendall(length.encode("utf-8").ljust(64))
+                        self.sock.send(json_data.encode("utf-8"))
                         break
 
                     else:
@@ -400,26 +398,26 @@ class ClientSocket:
                 length = str(len(json_data))
 
                 # 데이터 전송 (데이터 크기, 데이터)
-                self.sock.sendall(length.encode('utf-8').ljust(64))
-                self.sock.send(json_data.encode('utf-8'))
-            
+                self.sock.sendall(length.encode("utf-8").ljust(64))
+                self.sock.send(json_data.encode("utf-8"))
+
             while self.capture.isOpened() and not self.shutdown_thread_event.is_set():
                 data = self.data_form.copy()
                 ret, frame = self.capture.read()
                 frame = poseprocessor.initialize(frame)
                 pose_check_result = poseprocessor.check_pose(correct_pose, check_nodes, margin)
-                frame = poseprocessor.draw_incorrect_joints(frame,self.frame_width,self.frame_height)
+                frame = poseprocessor.draw_incorrect_joints(frame, self.frame_width, self.frame_height)
                 encoded_image = self.finalize_image(frame)
                 data["image"] = encoded_image
                 if pose_check_result and pose_check_result["failed_nodes"]:
                     data["incorrect_joint"] = pose_check_result["failed_nodes"]
-                angle = poseprocessor.get_angle_between_joints("l_vertical_hip",body_length)
-                
+                angle = poseprocessor.get_angle_between_joints("l_vertical_hip", body_length)
+
                 # angles Median Filter
                 angles.append(angle)
                 if len(angles) > 5:
                     del angles[0]
-                if not cnt%5 == 0:
+                if not cnt % 5 == 0:
                     if math.isnan(np.median(angles)):
                         data["angle"] = None
                     else:
@@ -430,17 +428,19 @@ class ClientSocket:
                 json_data = json.dumps(data)
                 length = str(len(json_data))
 
-                self.sock.sendall(length.encode('utf-8').ljust(64))
-                self.sock.send(json_data.encode('utf-8'))
-                print(u'send images %d'%(cnt))
-                cnt+=1
+                self.sock.sendall(length.encode("utf-8").ljust(64))
+                self.sock.send(json_data.encode("utf-8"))
+                print(f"send images {cnt}")
+                cnt += 1
         except Exception as e:
             err_msg = f"Error in knee_game: {e}"
             print(err_msg)
             self.send_error(err_msg)
 
+
 def main():
-    client = ClientSocket('localhost', 8081)
+    client = ClientSocket("localhost", 8081)
+
 
 if __name__ == "__main__":
     main()

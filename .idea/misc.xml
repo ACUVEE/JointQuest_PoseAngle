@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Black">
+<<<<<<< HEAD
+=======
+    <option name="enabledOnSave" value="true" />
+>>>>>>> 301f1f263ba9ac7880c3849e555eaecdda06d6d1
+    <option name="sdkName" value="Python 3.12 (JointQuest_PoseAngle)" />
+  </component>
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 (JointQuest_PoseAngle)" project-jdk-type="Python SDK" />
+</project>
