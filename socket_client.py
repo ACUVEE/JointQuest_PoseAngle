@@ -36,13 +36,14 @@ Json
 """
 
 # 상수
-WEBCAM_INDEX = 2
+WEBCAM_INDEX = 0
 MAX_CONNECTION_ATTEMPTS = 5
 CONNECTION_TEST_SLEEP = 1  # in seconds
 POSE_PATH = "output/20240415_031753.json"
-CHECK_NODES = ["11", "12", "13", "14", "15", "16", "23", "24", "25", "26", "27", "28"]
-IDLE_CHECK_NODES = ["11", "12"]
+IDLE_CHECK_NODES = ["11", "12", "13", "14", "15", "16", "23", "24", "25", "26", "27", "28"]
+CHECK_NODES = ["11", "12"]
 MARGIN = 0.1
+OUTLIER_RATIO = 0.1
 
 
 class ClientSocket:
@@ -76,7 +77,7 @@ class ClientSocket:
                 print(f"Attempt {self.connection_attempts} failed.")
         # 연결 시도 5회 넘어가면 프로세스 종료
         print(f"Failed to connect after {MAX_CONNECTION_ATTEMPTS}. Exiting program.")
-        sys.exit()
+        
 
     def send_data(self, data: Dict, print_msg: bool = True):
         """
@@ -99,7 +100,7 @@ class ClientSocket:
             err_msg(str): 발생한 에러의 메시지
         """
         if print_msg:
-            print(str)
+            print(err_msg)
         data = self.data_form.copy()
         data["error"] = err_msg
         json_data = json.dumps(data)
@@ -132,6 +133,7 @@ class ClientSocket:
             self.send_error(f"Error in receiving command: {e}")
         finally:
             self.cleanup()
+            sys.exit()
 
     def handle_command(self, command: str, json_data: Dict):
         if command == "shutdown_connection":
@@ -148,6 +150,8 @@ class ClientSocket:
                 self.start_thread(self.knee_game, body_length)
             else:
                 self.start_thread(self.knee_game)
+        else:
+            raise Exception("Wrong command")
 
     def start_thread(self, target, *args):
         """
@@ -218,7 +222,7 @@ class ClientSocket:
                     raise Exception("Failed to read frame from webcam.")
 
                 frame = poseprocessor.initialize(frame)
-                pose_check_result = poseprocessor.check_pose(self.load_pose_data(), CHECK_NODES, MARGIN)
+                pose_check_result = poseprocessor.check_pose(self.load_pose_data(), IDLE_CHECK_NODES, MARGIN)
                 frame = poseprocessor.draw_incorrect_joints(frame, self.webcam_handler.frame_width,
                                                             self.webcam_handler.frame_height)
                 encoded_image = self.webcam_handler.finalize_image(frame)
@@ -239,8 +243,6 @@ class ClientSocket:
                     cnt = 0
 
                 self.send_data(data)
-
-                json_data = json.dumps(data)
                 print(f"count: {cnt}")
 
         except Exception as e:
@@ -252,7 +254,7 @@ class ClientSocket:
         for key, values in size_dict.items():
             values.sort()
             length = len(values)
-            remove_amount = int(length * 0.1)
+            remove_amount = int(length * OUTLIER_RATIO)
             trimmed_values = values[remove_amount:(length - remove_amount)]
             filtered_dict[key] = sum(trimmed_values) / len(trimmed_values)
         return filtered_dict
@@ -304,6 +306,7 @@ class ClientSocket:
                 else:
                     data["incorrect_joint"] = pose_check_result.get("failed_nodes", [])
                     idle_angles.clear()
+                    idle_cnt = 0
 
                 self.send_data(data)
 

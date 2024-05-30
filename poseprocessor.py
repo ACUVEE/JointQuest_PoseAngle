@@ -33,7 +33,10 @@ class PoseProcessor():
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         self.joints = results
-        self.p_vec = P_vec(self.joints.pose_world_landmarks.landmark)
+        if self.joints.pose_world_landmarks:
+            self.p_vec = P_vec(self.joints.pose_world_landmarks.landmark)
+        else:
+            self.p_vec = None
 
     def draw_landmark(self, image):
         """
@@ -68,7 +71,7 @@ class PoseProcessor():
             각도를 구할 수 없는 경우 nan 반환
         """
         # 외회전과 내회전 등 관절의 회전은 감지할 수 없음
-        if self.joints.pose_world_landmarks:
+        if self.p_vec:
             # 고관절 굴곡 신전 (굴곡 180 ~ 신전 0)
             if target_movement == "r_vertical_hip":
                 angle = self.p_vec.angle_between_vectors('unit_vector_y', 'r_u_leg', body_length)
@@ -134,7 +137,7 @@ class PoseProcessor():
         return
             사용자의 신체부위가 (append)누적된 dict
         """
-        if self.joints.pose_world_landmarks:
+        if self.p_vec:
             for key in size_dict.keys():
                 size_dict[key].append(self.p_vec.get_3d_vetcor_size(key))
         return size_dict

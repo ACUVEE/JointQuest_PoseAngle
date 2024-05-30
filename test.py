@@ -1,6 +1,7 @@
-def test(a,*args):
-    print(a)
-    print(args)
+dictionanry = {"asd":None, "qwe":1}
 
+dictionanry["asd"] = {}
+dictionanry["asd"]["zxc"]= 123
+dictionanry["asd"]["xcv"]= 234
 
-test(25,{"asd":123, "vdfv":"asd"},"asd",123)
+print(dictionanry)
