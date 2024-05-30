@@ -111,6 +111,8 @@ class PoseProcessor():
             target_landmark = self.joints.pose_landmarks.landmark[target_joint]
             x = int(target_landmark.x * frame_width)
             y = int(target_landmark.y * frame_height)
+            if not math.isnan(angle):
+                angle = int(angle)
             result = cv2.putText(image, str(angle), (x, y), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 0), 2)
             return result
         return image

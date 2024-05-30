@@ -22,7 +22,7 @@ from webcam_handler import WebcamHandler
 Json
 {
     "image":None,
-    "angle": dict(Jsont),           {"hip_angle": 20, "knee_angle": 10, "hip_horizon_angle": 12}
+    "angle": dict(Json),           {"hip_angle": 20, "knee_angle": 10, "hip_horizon_angle": 12}
     "incorrect_joint": List<str>,
     "body_length": dict(json),
     "error": str
@@ -36,15 +36,15 @@ Json
 """
 
 # 상수
-WEBCAM_INDEX = 0
+WEBCAM_INDEX = 1
 MAX_CONNECTION_ATTEMPTS = 5
 CONNECTION_TEST_SLEEP = 1  # in seconds
-POSE_PATH = "output/20240415_031753.json"
+# POSE_PATH = "output/20240415_031753.json"
+POSE_PATH = "data/pose_data/measuring_pose.json"
 IDLE_CHECK_NODES = ["11", "12", "13", "14", "15", "16", "23", "24", "25", "26", "27", "28"]
 CHECK_NODES = ["11", "12"]
 MARGIN = 0.1
 OUTLIER_RATIO = 0.1
-
 
 class ClientSocket:
     def __init__(self, ip: str, port: int):
@@ -114,10 +114,10 @@ class ClientSocket:
         서버로부터 요청을 받고 별도의 쓰레드를 수행시키는 함수
 
         요청 목록:
-            0. 시스템 종료 - 소켓 클라이언트 프로세스 종료
-            1. 쓰레드 종료 - 현재 실행중인 서브 쓰레드 모두 종료
-            2. 통신 테스트 - 1씩 증가하는 angle 값을 가진 데이터를 1초에 한번씩 전송
-            3. 신체길이 측정 - 길이측정
+            ‘shutdown_connection’ - 소켓 클라이언트 프로세스 종료
+            ‘stop_thread’ - 현재 실행중인 서브 쓰레드 모두 종료
+            ‘connection_test’ - 1씩 증가하는 angle 값을 가진 데이터를 1초에 한번씩 전송
+            ‘measuring_body’ - 길이측정
             4. 무릎 운동
         """
         self.webcam_handler.setup_webcam()
@@ -204,12 +204,10 @@ class ClientSocket:
         # 포즈 추적을 위한 PoseProcessor할당(mediapipe)
         poseprocessor = PoseProcessor()
 
-        # 자세판단 파라미터
-        # pose_path = "data/pose_data/measuring_pose.json"
+
 
         # 신체측정 파라미터
         cnt = 0
-        outlier_ratio = 0.1
         size_dict = {key: [] for key in [
             "lr_shoulder", "rl_shoulder", "l_u_arm", "r_u_arm",
             "l_f_arm", "r_f_arm", "l_side", "r_side", "lr_hip",
@@ -235,7 +233,7 @@ class ClientSocket:
                     size_dict = poseprocessor.get_body_length(size_dict)
                     cnt += 1
                     if cnt >= 60:
-                        data["body_length"] = self.filter_outliers(size_dict)
+                        data["body_length"] = json.dumps(self.filter_outliers(size_dict))
                         self.shutdown_thread_event.set()
                 else:
                     data["incorrect_joint"] = pose_check_result.get("failed_nodes", [])
@@ -280,8 +278,10 @@ class ClientSocket:
         idle_angles = []
         angles = []
         cnt = 0
+        angle_dict={}
 
         try:
+            # 준비자세 체크
             while self.webcam_handler.capture.isOpened() and not self.shutdown_thread_event.is_set():
                 ret, frame = self.webcam_handler.capture.read()
                 if not ret:
@@ -298,7 +298,7 @@ class ClientSocket:
                     angle = poseprocessor.get_angle_between_joints("l_vertical_hip", body_length)
                     idle_cnt += 1
                     if idle_cnt >= 60:
-                        data["angle"] = np.median(idle_angles)
+                        data["angle"]["l_vertical_hip"] = np.median(idle_angles)
                         self.send_data(data)
                         break
                     else:
@@ -310,28 +310,43 @@ class ClientSocket:
 
                 self.send_data(data)
 
+            # 각도 추적 시작
             while self.webcam_handler.capture.isOpened() and not self.shutdown_thread_event.is_set():
                 ret, frame = self.webcam_handler.capture.read()
                 frame = poseprocessor.initialize(frame)
                 pose_check_result = poseprocessor.check_pose(self.load_pose_data(), CHECK_NODES, MARGIN)
                 frame = poseprocessor.draw_incorrect_joints(frame, self.webcam_handler.frame_width,
                                                             self.webcam_handler.frame_height)
+                
+                angle = poseprocessor.get_angle_between_joints("l_vertical_hip", body_length)
+                frame = poseprocessor.draw_angle(frame, 23, self.webcam_handler.frame_width, self.webcam_handler.frame_height, angle)
+                
+                lateral_hip_angle = poseprocessor.get_angle_between_joints("l_lateral_hip", body_length)
+                frame = poseprocessor.draw_angle(frame, 24, self.webcam_handler.frame_width, self.webcam_handler.frame_height, lateral_hip_angle)
+
+                vertical_knee_angle = poseprocessor.get_angle_between_joints("l_vertical_knee", body_length)
+                frame = poseprocessor.draw_angle(frame, 25, self.webcam_handler.frame_width, self.webcam_handler.frame_height, vertical_knee_angle)
+                
                 encoded_image = self.webcam_handler.finalize_image(frame)
                 data = self.data_form.copy()
                 data["image"] = encoded_image
 
                 if pose_check_result and pose_check_result.get("failed_nodes"):
                     data["incorrect_joint"] = pose_check_result["failed_nodes"]
-                angle = poseprocessor.get_angle_between_joints("l_vertical_hip", body_length)
+                
 
                 # angles Median Filter
                 angles.append(angle)
                 if len(angles) > 5:
                     angles.pop(0)
                 if not cnt % 5 == 0:
-                    data["angle"] = None if math.isnan(np.median(angles)) else np.median(angles)
+                    angle_dict["l_vertical_hip"] = None if math.isnan(np.median(angles)) else np.median(angles)
+                    angle_dict["l_lateral_hip"] = None if math.isnan(lateral_hip_angle) else lateral_hip_angle
+                    angle_dict["l_vertical_knee"] = None if math.isnan(vertical_knee_angle) else vertical_knee_angle
                 else:
                     data["angle"] = None
+
+                data["angle"] = json.dumps(angle_dict)
 
                 self.send_data(data)
                 print(f"send images {cnt}")
