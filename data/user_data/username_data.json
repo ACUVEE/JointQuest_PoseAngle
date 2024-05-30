@@ -1,0 +1,13 @@
+{
+
+    "username":"kim",
+    
+    "age":45,
+    
+    "body_length":{"lr_shoulder": 0.1, "rl_shoulder": 0.1, "l_u_arm": 0.1, "r_u_arm": 0.1,
+    "l_f_arm": 0.1, "r_f_arm": 0.1, "l_side": 0.1, "r_side": 0.1, "lr_hip": 0.1,
+    "rl_hip": 0.1, "l_u_leg": 0.1, "r_u_leg": 0.1, "l_l_leg": 0.1, "r_l_leg": 0.1},
+    
+    "knee_game":{ "max_score": 23, "max_angle": 23, "max_amount": 23 }
+    
+}
