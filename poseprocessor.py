@@ -1,13 +1,17 @@
+import math
+
 import cv2
 import mediapipe as mp
-import math
-import json
-from pose_compare import compare_poses
+
 from physical_vector import P_vec
+from pose_compare import compare_poses
+
+
 class PoseProcessor():
     def __init__(self):
         self.mp_pose = mp.solutions.pose
-        self.pose = self.mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, enable_segmentation = True)
+        self.pose = self.mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5,
+                                      enable_segmentation=True)
         self.mp_drawing = mp.solutions.drawing_utils
         self.pose_count = 0
 
@@ -29,7 +33,10 @@ class PoseProcessor():
         image.flags.writeable = True
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         self.joints = results
-        self.p_vec = P_vec(self.joints.pose_world_landmarks.landmark)
+        if self.joints.pose_world_landmarks:
+            self.p_vec = P_vec(self.joints.pose_world_landmarks.landmark)
+        else:
+            self.p_vec = None
 
     def draw_landmark(self, image):
         """
@@ -47,8 +54,8 @@ class PoseProcessor():
         if self.joints.pose_landmarks:
             self.mp_drawing.draw_landmarks(image, self.joints.pose_landmarks, self.mp_pose.POSE_CONNECTIONS)
         return image
-    
-    def get_angle_between_joints(self, target_movement:str, body_length:dict = {})->float:
+
+    def get_angle_between_joints(self, target_movement: str, body_length: dict = {}) -> float:
         """
         특정 동작에 대한 각도를 구하는 함수
 
@@ -63,27 +70,27 @@ class PoseProcessor():
             각도(float)
             각도를 구할 수 없는 경우 nan 반환
         """
-        #외회전과 내회전 등 관절의 회전은 감지할 수 없음 
-        if self.joints.pose_world_landmarks:
+        # 외회전과 내회전 등 관절의 회전은 감지할 수 없음
+        if self.p_vec:
             # 고관절 굴곡 신전 (굴곡 180 ~ 신전 0)
             if target_movement == "r_vertical_hip":
-                angle = self.p_vec.angle_between_vectors('unit_vector_y','r_u_leg',body_length)
+                angle = self.p_vec.angle_between_vectors('unit_vector_y', 'r_u_leg', body_length)
             elif target_movement == "l_vertical_hip":
-                angle = self.p_vec.angle_between_vectors('unit_vector_y','l_u_leg',body_length)
+                angle = self.p_vec.angle_between_vectors('unit_vector_y', 'l_u_leg', body_length)
             # 고관절 외전 내전 (내전 0 ~ 외전180 )
             elif target_movement == "r_lateral_hip":
-                angle = self.p_vec.angle_between_vectors('unit_vector_x','r_u_leg',body_length)
+                angle = self.p_vec.angle_between_vectors('unit_vector_x', 'r_u_leg', body_length)
             elif target_movement == "l_lateral_hip":
-                angle = self.p_vec.angle_between_vectors('unit_vector_-x','l_u_leg',body_length)
+                angle = self.p_vec.angle_between_vectors('unit_vector_-x', 'l_u_leg', body_length)
             # 무릎 굴곡 신전 (굴곡 180 ~ 신전 0)
             elif target_movement == "r_vertical_knee":
-                angle = self.p_vec.angle_between_vectors('r_u_leg','r_l_leg',body_length)
+                angle = self.p_vec.angle_between_vectors('r_u_leg', 'r_l_leg', body_length)
             elif target_movement == "l_vertical_knee":
-                angle = self.p_vec.angle_between_vectors('l_u_leg','l_l_leg',body_length)
+                angle = self.p_vec.angle_between_vectors('l_u_leg', 'l_l_leg', body_length)
             return angle
         return math.nan
-    
-    def draw_angle(self, image, target_joint:int, frame_width:int, frame_height:int, angle:float):
+
+    def draw_angle(self, image, target_joint: int, frame_width: int, frame_height: int, angle: float):
         """
         각도 값을 이미지에 그려주는 함수
 
@@ -107,17 +114,17 @@ class PoseProcessor():
             result = cv2.putText(image, str(angle), (x, y), cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 1, (0, 255, 0), 2)
             return result
         return image
-    
-    def initialize(self, frame,):
+
+    def initialize(self, frame, ):
         """
         필수요소 세팅을 위한 일련의 함수 호출 (새로운 프레임에 대한 작업을 수행할 때 항상 먼저 호출하여야함)
         """
-        self.detect_joint(frame)    # 필수
-        image = self.draw_landmark(frame)   # 필수 X
+        self.detect_joint(frame)  # 필수
+        image = self.draw_landmark(frame)  # 필수 X
 
         return image
-        
-    def get_body_length(self, size_dict:dict):
+
+    def get_body_length(self, size_dict: dict):
         """
         추적된 관절 값을 이용하여 신체부위의 (3D상의)길이를 측정하는 함수
 
@@ -130,12 +137,12 @@ class PoseProcessor():
         return
             사용자의 신체부위가 (append)누적된 dict
         """
-        if self.joints.pose_world_landmarks:
+        if self.p_vec:
             for key in size_dict.keys():
-                    size_dict[key].append(self.p_vec.get_3d_vetcor_size(key))
+                size_dict[key].append(self.p_vec.get_3d_vetcor_size(key))
         return size_dict
-    
-    def check_pose(self, correct_pose:dict = {}, check_nodes:list = [], margin:float = 0.1)->dict:
+
+    def check_pose(self, correct_pose: dict = {}, check_nodes: list = [], margin: float = 0.1) -> dict:
         """
         관절의 위치가 올바른 위치에 있는지 확인하는 함수
 
@@ -153,7 +160,7 @@ class PoseProcessor():
         return:
             passed(dict): 관절의 위치가 모두 올바른 위치에 있는지에 대한 여부
         """
-        passed ={}
+        passed = {}
         if self.joints.pose_world_landmarks:
             # 라벨을 붙여서 JSON 형식으로 변환
             landmarks = [
@@ -167,8 +174,8 @@ class PoseProcessor():
         else:
             self.incorrect_joints = []
         return passed
-    
-    def draw_incorrect_joints(self, frame, frame_width:int, frame_height:int):
+
+    def draw_incorrect_joints(self, frame, frame_width: int, frame_height: int):
         """
         잘못된 위치에 있는 관절을 강조하는 원을 이미지위에 그리는 함수
         
@@ -186,7 +193,7 @@ class PoseProcessor():
         radius = 30
         color = (0, 0, 255)
         thickness = 4
-        
+
         if self.joints.pose_world_landmarks:
             if self.incorrect_joints:
                 for joint in self.incorrect_joints:
@@ -195,7 +202,6 @@ class PoseProcessor():
                         x = int(target_landmark.x * frame_width)
                         y = int(target_landmark.y * frame_height)
                         center_coordinates = (x, y)
-                        cv2.circle(frame, center_coordinates, radius ,color, thickness)
+                        cv2.circle(frame, center_coordinates, radius, color, thickness)
 
         return frame
-    

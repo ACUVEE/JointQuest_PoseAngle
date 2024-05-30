@@ -35,7 +35,8 @@ class SeverSocket:
         while True:
             try:
                 message = input("요청쓰레드: ")
-                data = {'command' : message}
+                data = {'command' : message,
+                        "body_length": None}
                 json_data = json.dumps(data)
                 self.conn.sendall(json_data.encode('utf-8'))
 
@@ -65,8 +66,8 @@ class SeverSocket:
                     encoded_image = json_data["image"]
                     image = numpy.frombuffer(base64.b64decode(encoded_image), numpy.uint8)
                     decimg = cv2.imdecode(image, 1)
-                cv2.imshow("image", decimg)
-                cv2.waitKey(1)
+                    cv2.imshow("image", decimg)
+                    cv2.waitKey(1)
         except Exception as e:
             print(f"Data error: {e}")
             self.socketClose()

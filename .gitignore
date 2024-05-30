@@ -4,5 +4,6 @@ output/
 __pycache__/
 user/
 trashbin/
-.venv
 __pycache__
+venv
+.venv
