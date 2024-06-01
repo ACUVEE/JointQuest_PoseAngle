@@ -346,7 +346,7 @@ class ClientSocket:
                 else:
                     data["angle"] = None
 
-                data["angle"] = json.dumps(angle_dict)
+                data["angle"] = angle_dict
 
                 self.send_data(data)
                 print(f"send images {cnt}")
