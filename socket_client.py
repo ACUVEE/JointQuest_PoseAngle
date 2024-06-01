@@ -233,7 +233,7 @@ class ClientSocket:
                     size_dict = poseprocessor.get_body_length(size_dict)
                     cnt += 1
                     if cnt >= 60:
-                        data["body_length"] = json.dumps(self.filter_outliers(size_dict))
+                        data["body_length"] = self.filter_outliers(size_dict)
                         self.shutdown_thread_event.set()
                 else:
                     data["incorrect_joint"] = pose_check_result.get("failed_nodes", [])
