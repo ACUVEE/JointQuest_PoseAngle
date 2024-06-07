@@ -36,11 +36,11 @@ Json
 """
 
 # 상수
-WEBCAM_INDEX = 1
+WEBCAM_INDEX = 0
 MAX_CONNECTION_ATTEMPTS = 5
 CONNECTION_TEST_SLEEP = 1  # in seconds
 # POSE_PATH = "output/20240415_031753.json"
-POSE_PATH = "data/pose_data/measuring_pose.json"
+POSE_PATH = "./data/pose_data/measuring_pose.json"
 IDLE_CHECK_NODES = ["11", "12", "13", "14", "15", "16", "23", "24", "25", "26", "27", "28"]
 CHECK_NODES = ["11", "12"]
 MARGIN = 0.1
@@ -63,7 +63,7 @@ class ClientSocket:
 
     # 서버 연결 펑션
     def connect_server(self):
-        while self.connection_attempts < MAX_CONNECTION_ATTEMPTS:
+        while self.connection_attempts < MAX_CONNECTION_ATTEMPTS and not self.shutdown_system_event.is_set():
             try:
                 # 연결시도
                 self.sock = socket.socket()
@@ -150,6 +150,12 @@ class ClientSocket:
                 self.start_thread(self.knee_game, body_length)
             else:
                 self.start_thread(self.knee_game)
+        elif command == "reconnect":
+            self.stop_threads()
+            time.sleep(1)
+            self.reconnect()
+            
+        
         else:
             raise Exception("Wrong command")
 
@@ -164,6 +170,11 @@ class ClientSocket:
         thread = threading.Thread(target=target, args=args, daemon=True)
         thread.start()
         self.threads.append(thread)
+
+    def reconnect(self,):
+        self.cleanup()
+        time.sleep(1)
+        self.connect_server()
 
     def stop_threads(self):
         """
