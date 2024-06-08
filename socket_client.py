@@ -53,6 +53,7 @@ class ClientSocket:
         # 스레드 관리
         self.shutdown_thread_event = threading.Event()
         self.shutdown_system_event = threading.Event()
+        self.shutdown_connection_event = threading.Event()
         self.threads = []
         self.data_form = data_form.copy()
         self.webcam_handler = WebcamHandler(WEBCAM_INDEX)
@@ -71,6 +72,8 @@ class ClientSocket:
                 print(f"Connected to {self.TCP_SERVER_IP}:{self.TCP_SERVER_PORT}")
                 # 서버로부터 커맨드 입력 대기
                 self.receive_commands()
+                self.cleanup()
+                time.sleep(3)
             except Exception as e:
                 print(e)
                 self.connection_attempts += 1
@@ -121,8 +124,9 @@ class ClientSocket:
             4. 무릎 운동
         """
         self.webcam_handler.setup_webcam()
+        self.shutdown_connection_event.clear()
         try:
-            while not self.shutdown_system_event.is_set():
+            while not self.shutdown_connection_event.is_set():
                 data = self.sock.recv(1024).decode().strip()
                 if not data:
                     break
@@ -131,9 +135,9 @@ class ClientSocket:
                 self.handle_command(command, json_data)
         except Exception as e:
             self.send_error(f"Error in receiving command: {e}")
-        finally:
-            self.cleanup()
-            sys.exit()
+        # finally:
+        #     self.cleanup()
+        #     sys.exit()
 
     def handle_command(self, command: str, json_data: Dict):
         if command == "shutdown_connection":
@@ -152,8 +156,7 @@ class ClientSocket:
                 self.start_thread(self.knee_game)
         elif command == "reconnect":
             self.stop_threads()
-            time.sleep(1)
-            self.reconnect()
+            self.shutdown_connection_event.set()
             
         
         else:
@@ -170,11 +173,6 @@ class ClientSocket:
         thread = threading.Thread(target=target, args=args, daemon=True)
         thread.start()
         self.threads.append(thread)
-
-    def reconnect(self,):
-        self.cleanup()
-        time.sleep(1)
-        self.connect_server()
 
     def stop_threads(self):
         """
